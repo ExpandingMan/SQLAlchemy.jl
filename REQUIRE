@@ -1,6 +1,4 @@
-julia 0.4-
-PyCall 0.8.2
+julia 0.6-dev
+PyCall 1.12.0
 BinDeps
-@osx Homebrew
 Compat
-@windows WinRPM

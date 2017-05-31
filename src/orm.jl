@@ -2,11 +2,11 @@ using MacroTools
 
 Base.getindex(n::Nullable) = n.value
 
-abstract AR
+abstract type AR end
 
 const metadata = MetaData()
 
-immutable TableMap
+struct TableMap
     table::Table
     columns::Dict{Symbol, String}
     relations::Dict{Symbol, Dict{Symbol, Any}}
@@ -16,7 +16,7 @@ const table_map = Dict{Any, TableMap}()
 
 function columnname(tbl, sqlname)
     for (k,v) in table_map[tbl].columns
-        if v==sqlname
+        if v == sqlname
             return k
         end
     end
@@ -25,19 +25,17 @@ end
 @enum State Transient Pending Persistent Detached
 @enum ARSetState Unloaded Loaded
 
-type ARSet{T<:AR}
+mutable struct ARSet{T<:AR}
     R::Vector{T}
-    state::Symbol
+    statename::Symbol
     parent::AR
     column::Symbol
     state::ARSetState
-    ARSet(parent, column) = new(T[], :unloaded, parent, column, Unloaded)
+    ARSet{T}(parent, column) where T<:AR = new(T[], :unloaded, parent, column, Unloaded)
 end
 
 
-function Base.getindex(s::ARSet, idx)
-    s.R[idx]
-end
+Base.getindex(s::ARSet, idx) = s.R[idx]
 
 Base.endof(s::ARSet) = endof(s.R)
 Base.length(s::ARSet) = length(s.R)
@@ -126,7 +124,7 @@ macro table(desc)
     end
 
     quote
-        type $(esc(T)) <: AR
+        mutable struct $(esc(T)) <: AR
             $(new_fields...)
             _state::State
             _session::Nullable{Session}
@@ -161,7 +159,7 @@ macro table(desc)
     end
 end
 
-immutable ID
+struct ID
     key::Int
     table::DataType
 end
@@ -194,7 +192,7 @@ function ID{T<:AR}(t::T)
     ID(t[pkeyname][], T)
 end
 
-type Session
+mutable struct Session
     db::Connection
     new_::Set{AR}
     dirty::Set{AR}
@@ -275,7 +273,7 @@ end
 
 
 function Base.getindex(a::AR, field)
-    val = a.(field)
+    val = getfield(a, field)
     if a._state == Persistent && isa(val, ARSet)
         ensureloaded!(a._session[], val)
     end
@@ -287,18 +285,16 @@ function Base.setindex!(a::AR, value, field)
 end
 
 function Base.setindex!(a::AR, value::Nullable, field)
-    a.(field) = value
+    setfield!(a, field, value)
     dirty!(a)
 end
 
 Session(engine::Engine) = Session(connect(engine), Set{AR}(), Set{AR}(),
                                   Set{AR}(), Dict{ID, AR}())
 
-function Base.show(io::IO, s::Session)
-    print(io, "Session")
-end
+Base.show(io::IO, s::Session) = print(io, "Session")
 
-type SessionQuery
+mutable struct SessionQuery
     session::Session
     table::Type
     select::Select
@@ -379,7 +375,7 @@ function Base.flush(s::Session)
     for r in s.dirty
         tbl = gettable(r)
         pkey = primarykey(r)
-        stmt = update(tbl) |> where(tbl[pkey]==r[pkey][])
+        stmt = update(tbl) |> wear(tbl[pkey]==r[pkey][])
         db(stmt; sqlfields(r)...)
     end
     empty!(s.dirty)
@@ -415,8 +411,8 @@ function Base.getindex{T<:SQLAlchemy.AR}(::Type{T}, jl_field)
 end
 
 function Base.filter(clause::Wrapped)
-    query->begin
-        new_clause = query.select |> where(clause)
+    query -> begin
+        new_clause = query.select |> wear(clause)
         SessionQuery(query.session, query.table, new_clause)
     end
 end

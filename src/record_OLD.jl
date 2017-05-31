@@ -1,10 +1,8 @@
-using PyCall
+const COLUMN_NAMES = Dict{UInt64, Vector{String}}()
 
-const COLUMN_NAMES = Dict{@compat(UInt64), Vector{UTF8String}}()
-
-immutable Record{T}
+struct Record{T}
     fields::T
-    columns_idx::@compat(UInt64)
+    columns_idx::UInt64
 end
 column_names(r) = COLUMN_NAMES[r.columns_idx]
 Base.getindex(r::Record, idx::Integer) = r.fields[idx]
@@ -26,7 +24,7 @@ end
 
 function Base.show(io::IO, r::Record)
     columns = column_names(r)
-    names = ["$column=>$(field_show(field))" for (column, field) in zip(columns, r.fields)]
+    names = ["$column=>$(field_show(field))" for (column, field) ∈ zip(columns, r.fields)]
     print(io, join(names, ", "))
 end
 
@@ -45,18 +43,18 @@ function Record(pyo::PyObject)
     Record((values...), idx)
 end
 
-immutable RecordSet
+function Record(dict::Dict)
+
+end
+
+struct RecordSet
     records::Vector{Record}
-    columns_idx::@compat(UInt64)
+    columns_idx::UInt64
 end
 
-function Base.getindex(s::RecordSet, idx::Integer)
-    s.records[idx]
-end
+Base.getindex(s::RecordSet, idx::Integer) = s.records[idx]
 
-function Base.getindex(s::RecordSet, idx)
-    RecordSet(s.records[idx], s.columns_idx)
-end
+Base.getindex(s::RecordSet, idx) = RecordSet(s.records[idx], s.columns_idx)
 
 function RecordSet(records)
     if isempty(records)
@@ -71,7 +69,7 @@ Base.endof(rs::RecordSet) = endof(rs.records)
 
 function Base.show(io::IO, rs::RecordSet)
     limit = min(length(rs.records), 10)
-    for i=1:limit
+    for i ∈ 1:limit
         print(io, rs.records[i])
         if i<limit
             print(io, "\n")

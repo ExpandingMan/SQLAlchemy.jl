@@ -1,6 +1,6 @@
 using SQLAlchemy
 
-@table type User("Users")
+@table mutable struct User("Users")
     name::("name",UTF8String)
     age::("age", Float64)
     id::("id", Int, primary_key=true)
