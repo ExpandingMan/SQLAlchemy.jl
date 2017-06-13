@@ -192,9 +192,12 @@ end
 @define_method(Table,alias,alias,Other)
 @define_method(Table,delete,delete,Delete)
 @define_method(Table,update,update,Update)
+@define_method(Delete,where,wear,Delete,false)
+
+# these are wrapped again in output.jl
 @define_method(ResultProxy,fetchone,pyfetchone,PyObject)
 @define_method(ResultProxy,fetchall,pyfetchall,PyObject)
-@define_method(Delete,where,wear,Delete,false)
+@define_method(ResultProxy,fetchmany,pyfetchmany,PyObject)
 
 @define_method(SQLFunc,label,label,SQLFunc)
 

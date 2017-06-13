@@ -22,17 +22,30 @@ end
 
 
 fetchone{T}(::Type{T}, rp::ResultProxy) = convert(T, pyfetchone(rp))
+fetchone(::Type{Dict}, rp::ResultProxy) = convert(PyCall.PyAny, pyfetchone(rp))
+fetchone(rp::ResultProxy) = fetchone(Array, rp)
+
+fetchmany{T}(::Type{T}, rp::ResultProxy, size::Int=1)  = convert(T, pyfetchmany(rp, size))
+fetchmany(rp::ResultProxy, size::Int=1) = fetchmany(Array, rp, size)
 
 import Base.eltype
 
 Base.eltype(c::Column) = _sql_coltype(c.o)
 
+rowcount(rp::ResultProxy) = rp.o[:rowcount]
+
+eltypes(cols::Vector{Column}) = eltype.(cols)
 eltypes(cols::Dict{String,Column}) = Dict{String,DataType}(k=>eltype(v) for (k,v) ∈ cols)
 export eltypes
 
+name(c::Column)::String = c.o[:name]
+
+columns(t::Table) = [Column(v) for v ∈ values(t.o[:columns])]
+columns(rp::ResultProxy) = [Column(v) for v ∈ values(rp.o[:context][:compiled][:statement][:columns])]
+
 # returns a dict giving columns as sqlalchemy objects
-columns(t::Table) = Dict{String,Column}(k=>Column(v) for (k,v) ∈ t.o[:columns])
-function columns(rp::ResultProxy)
+columns(::Type{Dict}, t::Table) = Dict{String,Column}(k=>Column(v) for (k,v) ∈ t.o[:columns])
+function columns(::Type{Dict}, rp::ResultProxy)
     Dict{String,Column}(k=>Column(v) for (k,v) ∈ rp.o[:context][:compiled][:statement][:columns])
 end
 export columns
@@ -43,11 +56,11 @@ export columns
 # this is the fallback method for tabular constructors
 # works for DataFrames and DataTables
 function fetchall{T}(::Type{T}, rp::ResultProxy)
-    coltypes = eltypes(columns(rp))
-    colnames = Symbol[Symbol(cname) for cname ∈ keys(coltypes)]
-    coltypes = DataType[coltypes[string(col)] for col ∈ colnames]
+    cols = columns(rp)
+    colnames = name.(cols)
+    coltypes = eltype.(cols)
     arr = convert(Array, pyfetchall(rp))
-    df = T(coltypes, colnames, length(arr))
+    df = T(coltypes, Symbol.(colnames), length(arr))
     for (row,dict) ∈ enumerate(arr)
         for k ∈ keys(dict)
             df[row, Symbol(k)] = dict[k]

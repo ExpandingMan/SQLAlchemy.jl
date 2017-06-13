@@ -1,5 +1,7 @@
 using DataFrames
 using SQLAlchemy
+import SQLAlchemy.groupby
+using DataStreams
 
 db, schema = loadchinook()
 
@@ -8,15 +10,24 @@ artists = Table("Artist", schema, autoload=true)
 
 
 q = db(select([artists[:Name],
-               func("count", albums[:Title]) |> label("# of albums")]) |>
+               func("count", albums[:Title]) |> label("NAlbums")]) |>
        selectfrom(join(artists, albums)) |>
        groupby(albums[:ArtistId]) |>
-       orderby(desc("# of albums")))
+       orderby(desc("NAlbums")))
 
-df = fetchall(DataFrame, q)
+# row1 = fetchone(Dict, q)
+# row2 = fetchone(Array, q)
+# df = fetchall(DataFrame, q)
 
-# q = select([artists[:Name], func("count", albums[:Title]) |> label("# of albums")])
+src = SQLAlchemy.Source(q, buffer_size=8)
 
+# sf1(row) = Data.streamfrom(src, Data.Field, String, row, "Name")
+# sf2(row) = Data.streamfrom(src, Data.Field, Nullable{Int}, row, "NAlbums")
 
+info("starting stream...")
+
+sink = Data.stream!(src, DataFrame)
+
+info("done.")
 
 
