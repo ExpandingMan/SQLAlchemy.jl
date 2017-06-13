@@ -1,7 +1,8 @@
-using DataFrames
+# using DataFrames
 using SQLAlchemy
 import SQLAlchemy.groupby
 using DataStreams
+using Feather
 
 db, schema = loadchinook()
 
@@ -29,5 +30,11 @@ info("starting stream...")
 sink = Data.stream!(src, DataFrame)
 
 info("done.")
+
+# info("writing feather...")
+# Data.stream!(src, Feather.Sink, false, Dict{Int,Function}(), "test1.feather")
+# info("done.")
+
+
 
 

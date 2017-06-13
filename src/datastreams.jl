@@ -109,7 +109,7 @@ Data.streamtype(::Type{Source}, ::Type{Data.Field}) = true
 function pullrows!(src::Source, n::Integer)
     v = fetchmany(src, n)
     if length(v) < n && (src.depleted = true)
-        src.buffer = Buffer{Dict}(v, src.buffer.offset + length(src.buffer.offset))
+        src.buffer = Buffer{Dict}(v, src.buffer.offset + length(src.buffer))
         return src.buffer
     end
     slidefull!(src.buffer, fetchmany(src, n))
@@ -126,10 +126,8 @@ function Data.streamfrom{T}(src::Source, ::Type{Data.Field}, ::Type{T}, row, col
         for i ∈ 1:topull
             pullrows!(src, n)
         end
-        println("pulling, ", row, " ", src.buffer.offset, " ", length(src.buffer))
         return extract(src.buffer, T, row, col)::T
     else
-        println(row, " ", src.buffer.offset)
         return extract(src.buffer, T, row, col)::T
     end
 end
