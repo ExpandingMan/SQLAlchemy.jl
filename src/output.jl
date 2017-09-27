@@ -55,16 +55,22 @@ export columns
 ===================================================================================================#
 
 # this is the fallback method for tabular constructors
-# works for DataFrames and DataTables
-function fetchall{T}(::Type{T}, rp::ResultProxy)
+# this is ridiculously inefficient but I don't think much can be done
+# works for DataFrames
+function fetchall(::Type{T}, rp::ResultProxy) where T
     cols = columns(rp)
     colnames = name.(cols)
-    coltypes = eltype.(cols)
+    coltypes = Type[Union{eltype(col),Null} for col ∈ cols]
     arr = convert(Array, pyfetchall(rp))
     df = T(coltypes, Symbol.(colnames), length(arr))
-    for (row,dict) ∈ enumerate(arr)
-        for k ∈ keys(dict)
-            df[row, Symbol(k)] = dict[k]
+    for (row,tpl) ∈ enumerate(arr)
+        vals = convert(Tuple, tpl)
+        for (col,dtype) ∈ enumerate(coltypes)
+            if vals[col] == pynone
+                df[row,col] = null
+            else
+                df[row, col] = convert(dtype, vals[col])
+            end
         end
     end
     df

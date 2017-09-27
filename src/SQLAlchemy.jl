@@ -3,12 +3,15 @@ __precompile__(true)
 module SQLAlchemy
 
 using DataStreams
+using DataFrames
 using Nulls  # needed for use with datastreams
 using PyCall
 # using Requires
 
 const sqlalchemy = PyNULL()
 const inspection = PyNULL()
+
+const pynone = PyNULL()
 
 # @require DataFrames begin
 #     import DataFrames: groupby, eltypes
@@ -27,9 +30,12 @@ import Base: getindex, setindex!, convert, show, join, push!, endof, length, in,
 import Base: all, first, filter
 import Base: (==), (>), (>=), (<), (<=), (!=)
 
+import DataFrames.eltypes
+
 function __init__()
     copy!(sqlalchemy, pyimport("sqlalchemy"))
     copy!(inspection, pyimport("sqlalchemy.inspection"))
+    copy!(pynone, pybuiltin("None"))
 end
 
 include("core.jl")

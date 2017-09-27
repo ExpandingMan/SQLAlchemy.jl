@@ -1,67 +1,9 @@
-
-const DEFAULT_BUFFER_SIZE = 2^16
-
 # NOTE: there is no way around the ridiculous dict lookup in streamfrom because the result doesn't
 # even expose a column order
 
 # TODO consider using named tuples instead of dicts
-# TODO implement a sane buffer, like a dataframe
+# TODO deprecate `Buffer` switch to dataframe
 
-
-#===================================================================================================
-    <buffer>
-===================================================================================================#
-mutable struct Buffer{T}
-    data::Vector{T}
-    offset::Int  # the difference between the first row of buffer and first row of table
-end
-
-Buffer(v::Vector{T}, row::Integer) where T = Buffer{T}(v, row)
-
-hasindex(b::Buffer, i::Integer) = (1 ≤ i - b.offset ≤ length(b))
-
-Base.length(b::Buffer) = length(b.data)
-
-Base.getindex(b::Buffer, i) = b.data[i - b.offset]
-
-Base.setindex!{T}(b::Buffer{T}, val::T, i::Integer) = (b.data[i - b.offset] = val)
-Base.setindex!{T}(b::Buffer{T}, val::AbstractVector{T}, i::AbstractVector) = (b.data[i - b.offset] = val)
-
-Base.start(b::Buffer) = b.offset + 1
-Base.endof(b::Buffer) = b.offset + length(b)
-
-function slide(b::Buffer, v::AbstractVector)
-    n = length(v)
-    newbuff = Buffer(similar(b.data), b.offset + n)
-    newbuff.data .= circshift(b.data, -n)
-    newbuff.data[(end-n+1):end] .= v
-    newbuff
-end
-
-function slidefull(b::Buffer, v::AbstractVector)
-    n = length(v)
-    newbuff = Buffer(similar(v), b.offset+n)
-    newbuff.data .= v
-    newbuff
-end
-
-function slidefull!(b::Buffer, v::AbstractVector)
-    b.data .= v
-    b.offset += length(v)
-    b
-end
-
-extract{T}(b::Buffer, ::Type{T}, row, col)::T = b[row][col]::T
-
-# for now assume contents of buffer are not nullable type
-function extract{T}(b::Buffer, ::Type{Nullable{T}}, row, col)::Nullable{T}
-    v = b[row][col]
-    v == nothing && (return Nullable{T}())
-    Nullable{T}(v)
-end
-#===================================================================================================
-    </buffer>
-===================================================================================================#
 
 function Data.schema(rp::ResultProxy)
     cols = columns(rp)
@@ -75,23 +17,22 @@ mutable struct Source
     schema::Data.Schema
     depleted::Bool
 
-    buffer::Buffer{Dict}
+    data::DataFrame
 
-    function Source(res::ResultProxy, sch::Data.Schema;
-                    buffer_size::Int=DEFAULT_BUFFER_SIZE, preload::Bool=true)
-        if preload
-            b = Buffer{Dict}(fetchmany(res, buffer_size), 0)
-            depleted = length(b) < buffer_size
-        else
-            b = Buffer{Dict}(Vector{Dict}(), 0)
-            depleted = false  # assume not depleted, but don't know
-        end
-        new(res, sch, depleted, b)
-    end
+    # function Source(res::ResultProxy, sch::Data.Schema; preload::Bool=true)
+    #     if preload
+    #         b = Buffer{Dict}(fetchmany(res, buffer_size), 0)
+    #         depleted = length(b) < buffer_size
+    #     else
+    #         b = Buffer{Dict}(Vector{Dict}(), 0)
+    #         depleted = false  # assume not depleted, but don't know
+    #     end
+    #     new(res, sch, depleted, b)
+    # end
 
-    function Source(res::ResultProxy; buffer_size::Int=DEFAULT_BUFFER_SIZE, preload::Bool=true)
-        Source(res, Data.schema(res), buffer_size=buffer_size, preload=preload)
-    end
+    # function Source(res::ResultProxy; preload::Bool=true)
+    #     Source(res, Data.schema(res), preload=preload)
+    # end
 end
 
 Data.schema(src::Source) = src.schema
