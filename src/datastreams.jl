@@ -66,7 +66,8 @@ end
 function Data.schema(rp::ResultProxy)
     cols = columns(rp)
     nrows = rowcount(rp)
-    Data.Schema(name.(cols), eltype.(cols), nrows)
+    nrows < 0 && (nrows = null)
+    Data.Schema(eltype.(cols), name.(cols), nrows)
 end
 
 mutable struct Source

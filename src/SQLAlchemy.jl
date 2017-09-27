@@ -3,6 +3,7 @@ __precompile__(true)
 module SQLAlchemy
 
 using DataStreams
+using Nulls  # needed for use with datastreams
 using PyCall
 # using Requires
 

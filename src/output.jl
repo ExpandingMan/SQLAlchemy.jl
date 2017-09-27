@@ -1,6 +1,7 @@
 #===================================================================================================
     <metadata>
 ===================================================================================================#
+# TODO use Dates.Time for time-of-day objects
 const SQL_TYPE_DICT = Dict("INTEGER"=>Int64, "FLOAT"=>Float64, "VARCHAR"=>String,
                            "BIT"=>Bool, "SMALLDATETIME"=>DateTime, "BIGINT"=>BigInt,
                            "BINARY"=>BitArray, "BLOB"=>BitArray, "BOOLEAN"=>Bool,
@@ -9,7 +10,7 @@ const SQL_TYPE_DICT = Dict("INTEGER"=>Int64, "FLOAT"=>Float64, "VARCHAR"=>String
                            "INT"=>Int64, "JSON"=>Dict, "NCHAR"=>String,
                            "NVARCHAR"=>String, "NUMERIC"=>Float64, "REAL"=>Float64,
                            "SMALLINT"=>Int16, "TEXT"=>String, "TIME"=>String,
-                           "TIMESTAMP"=>DateTime, "VARBINARY"=>BitArray,
+                           "TIMESTAMP"=>DateTime, "VARBINARY"=>BitArray, "STRING"=>String,
                            "VARCHAR"=>String)
 
 
@@ -40,8 +41,8 @@ export eltypes
 
 name(c::Column)::String = c.o[:name]
 
-columns(t::Table) = [Column(v) for v ∈ values(t.o[:columns])]
-columns(rp::ResultProxy) = [Column(v) for v ∈ values(rp.o[:context][:compiled][:statement][:columns])]
+columns(t::Table) = [Column(v) for v ∈ t.o[:columns][:values]()]
+columns(rp::ResultProxy) = [Column(v) for v ∈ rp.o[:context][:compiled][:statement][:columns][:values]()]
 
 # returns a dict giving columns as sqlalchemy objects
 columns(::Type{Dict}, t::Table) = Dict{String,Column}(k=>Column(v) for (k,v) ∈ t.o[:columns])
