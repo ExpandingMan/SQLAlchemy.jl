@@ -27,7 +27,7 @@ export SQLNumeric, SQLText, SQLTime, SQLUnicode, SQLUnicodeText, SQLType
 export @table
 
 import Base: getindex, setindex!, convert, show, join, push!, endof, length, in, length, start
-import Base: all, first, filter
+import Base: all, first, filter, eltype
 import Base: (==), (>), (>=), (<), (<=), (!=)
 
 import DataFrames.eltypes

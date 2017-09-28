@@ -21,10 +21,10 @@ db(insert(users), name="McCoy", rank=nothing, age=37)
 
 res = db(select([users]))
 
-df = fetchall(DataFrame, res)
+# df = fetchall(DataFrame, res)
 
 # src = SQLAlchemy.Source(res)
-# 
+#
 # # this is just for testing datastreams
 # @testset begin
 #     @test Data.streamfrom(src, Data.Field, String, 1, src["name"]) == "Kirk"

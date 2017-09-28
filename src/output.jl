@@ -26,11 +26,6 @@ fetchone{T}(::Type{T}, rp::ResultProxy) = convert(T, pyfetchone(rp))
 fetchone(::Type{Dict}, rp::ResultProxy) = convert(PyCall.PyAny, pyfetchone(rp))
 fetchone(rp::ResultProxy) = fetchone(Array, rp)
 
-fetchmany{T}(::Type{T}, rp::ResultProxy, size::Int=1)  = convert(T, pyfetchmany(rp, size))
-fetchmany(rp::ResultProxy, size::Int=1) = fetchmany(Array, rp, size)
-
-import Base.eltype
-
 Base.eltype(c::Column) = _sql_coltype(c.o)
 
 rowcount(rp::ResultProxy) = rp.o[:rowcount]
@@ -54,14 +49,16 @@ export columns
     </metadata>
 ===================================================================================================#
 
-# this is the fallback method for tabular constructors
+_fetchmulti(rp::ResultProxy, nrows::Integer) = nrows ≥ 0 ? pyfetchmany(rp, nrows) : pyfetchall(rp)
+
+# for now this does fetchall by default if nrows < 0
 # this is ridiculously inefficient but I don't think much can be done
 # works for DataFrames
-function fetchall(::Type{T}, rp::ResultProxy) where T
+function fetchmany(::Type{T}, rp::ResultProxy, nrows::Integer) where T
     cols = columns(rp)
     colnames = name.(cols)
     coltypes = Type[Union{eltype(col),Null} for col ∈ cols]
-    arr = convert(Array, pyfetchall(rp))
+    arr = convert(Array, _fetchmulti(rp, nrows))
     df = T(coltypes, Symbol.(colnames), length(arr))
     for (row,tpl) ∈ enumerate(arr)
         vals = convert(Tuple, tpl)
@@ -75,13 +72,10 @@ function fetchall(::Type{T}, rp::ResultProxy) where T
     end
     df
 end
+fetchmany(rp::ResultProxy, nrows::Integer) = fetchmany(DataFrame, rp, nrows)
 
+fetchall(::Type{T}, rp::ResultProxy) where T = fetchmany(T, rp, -1)
+fetchall(rp::ResultProxy) = fetchall(DataFrame, rp)
 
-#===================================================================================================
-    <DataFrames>
-===================================================================================================#
-#===================================================================================================
-    </DataFrames>
-===================================================================================================#
 
 
