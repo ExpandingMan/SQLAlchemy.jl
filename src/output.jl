@@ -54,8 +54,8 @@ _fetchmulti(rp::ResultProxy, nrows::Integer) = nrows ≥ 0 ? pyfetchmany(rp, nro
 # for now this does fetchall by default if nrows < 0
 # this is ridiculously inefficient but I don't think much can be done
 # works for DataFrames
-function fetchmany(::Type{T}, rp::ResultProxy, nrows::Integer) where T
-    cols = columns(rp)
+function fetchmany(::Type{T}, cols::AbstractVector{Column}, rp::ResultProxy, nrows::Integer) where T
+    # cols = columns(rp)
     colnames = name.(cols)
     coltypes = Type[Union{eltype(col),Null} for col ∈ cols]
     arr = convert(Array, _fetchmulti(rp, nrows))
@@ -72,10 +72,15 @@ function fetchmany(::Type{T}, rp::ResultProxy, nrows::Integer) where T
     end
     df
 end
+function fetchmany(cols::AbstractVector{Column}, rp::ResultProxy, nrows::Integer)
+    fetchmany(DataFrame, cols, rp, nrows)
+end
+fetchmany(::Type{T}, rp::ResultProxy, nrows::Integer) where T = fetchmany(T, columns(rp), rp, nrows)
 fetchmany(rp::ResultProxy, nrows::Integer) = fetchmany(DataFrame, rp, nrows)
 
-fetchall(::Type{T}, rp::ResultProxy) where T = fetchmany(T, rp, -1)
+fetchall(::Type{T}, cols::AbstractVector{Column}, rp::ResultProxy) where T = fetchmany(T, cols, rp, -1)
+fetchall(::Type{T}, rp::ResultProxy) where T = fetchall(T, columns(rp), rp)
+
+fetchall(cols::AbstractVector{Column}, rp::ResultProxy) = fetchall(DataFrame, cols, rp)
 fetchall(rp::ResultProxy) = fetchall(DataFrame, rp)
-
-
 
