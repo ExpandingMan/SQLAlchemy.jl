@@ -1,8 +1,4 @@
-# NOTE: there is no way around the ridiculous dict lookup in streamfrom because the result doesn't
-# even expose a column order
-
-# TODO consider using named tuples instead of dicts
-# TODO deprecate `Buffer` switch to dataframe
+# TODO this is largely unfinshed work based on a previous idea that I abandoned because of metadata issues.
 
 
 function Data.schema(rp::ResultProxy)
