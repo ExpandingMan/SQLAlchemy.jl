@@ -20,7 +20,7 @@ const pynone = PyNULL()
 export Table, Column, MetaData, Engine, Session
 export createengine, select, text, connect, func, inspect, query
 export createall, insert, values, compile, connect, execute, fetchone, fetchall, fetchmany, wear
-export selectfrom, and, orderby, alias, join, groupby
+export selectfrom, and, orderby, alias, name
 export having, delete, update, distinct, limit, offset, label, loadchinook, desc, asc, dirty
 export SQLString, SQLInteger, SQLBoolean, SQLDate, SQLDateTime, SQLEnum, SQLFloat, SQLInterval
 export SQLNumeric, SQLText, SQLTime, SQLUnicode, SQLUnicodeText, SQLType
@@ -30,7 +30,7 @@ import Base: getindex, setindex!, convert, show, join, push!, endof, length, in,
 import Base: all, first, filter, eltype
 import Base: (==), (>), (>=), (<), (<=), (!=)
 
-import DataFrames.eltypes
+import DataFrames: eltypes, groupby, join
 
 function __init__()
     copy!(sqlalchemy, pyimport("sqlalchemy"))
