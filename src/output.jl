@@ -118,22 +118,39 @@ export typedict
 
 _fetchmulti(rp::ResultProxy, nrows::Integer) = nrows ≥ 0 ? pyfetchmany(rp, nrows) : pyfetchall(rp)
 
+function _insert_single_entry(col::AbstractVector{Union{T,Null}}, row, ncol, val::PyObject) where T
+    if val == pynone
+        col[row] = pynone
+    else
+        col[row] = coerce(Union{T,Null}, val)
+    end
+end
+function _insert_single_entry(col::AbstractVector{T}, row, ncol, val::PyObject) where T
+    if val == pynone
+        ArgumentError("Tried to insert null into non-null column $ncol.")
+    else
+        col[row] = coerce(T, val)
+    end
+end
+function _insert_single_entry(col::AbstractVector{T}, row, ncol, val) where T
+    col[row] = coerce(T, val)
+end
+
+function _insert_row_tuple(cols::AbstractVector, row, vals::Tuple)
+    for i ∈ 1:length(cols)
+        _insert_single_entry(cols[i], row, i, vals[i])
+    end
+end
+
 # for now this does fetchall by default if nrows < 0
 # this is ridiculously inefficient but I don't think much can be done
 # works for DataFrames
-function fetchmany(::Type{T}, colnames::AbstractVector{<:Union{<:AbstractString,Symbol}},
-                   coltypes::AbstractVector{<:Type}, rp::ResultProxy, nrows::Integer) where T
+function fetchmany(::Type{DataFrame}, colnames::AbstractVector{<:Union{<:AbstractString,Symbol}},
+                   coltypes::AbstractVector{<:Type}, rp::ResultProxy, nrows::Integer)
     arr = convert(Array, _fetchmulti(rp, nrows))
-    df = T(coltypes, Symbol.(colnames), length(arr))
+    df = DataFrame(coltypes, Symbol.(colnames), length(arr))
     for (row,tpl) ∈ enumerate(arr)
-        vals = convert(Tuple, tpl)
-        for (col,dtype) ∈ enumerate(coltypes)
-            if vals[col] == pynone
-                df[row,col] = null
-            else
-                df[row, col] = coerce(dtype, vals[col])
-            end
-        end
+        _insert_row_tuple(df.columns, row, convert(Tuple, tpl))
     end
     df
 end
