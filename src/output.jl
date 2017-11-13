@@ -27,6 +27,7 @@ coerce(::Type{T}, x::PyObject) where T = coerce(T, convert(PyAny, x))::T
     <metadata>
 ===================================================================================================#
 # TODO use Dates.Time for time-of-day objects
+# NOTE: usually "BIGINTEGER" means double ints, NOT arbitrary size ints
 const SQL_TYPE_DICT = Dict("INTEGER"=>Int64, "FLOAT"=>Float64, "VARCHAR"=>String,
                            "BIT"=>Bool, "SMALLDATETIME"=>DateTime, "BIGINT"=>BigInt,
                            "BINARY"=>BitArray, "BLOB"=>BitArray, "BOOLEAN"=>Bool,
@@ -36,7 +37,7 @@ const SQL_TYPE_DICT = Dict("INTEGER"=>Int64, "FLOAT"=>Float64, "VARCHAR"=>String
                            "NVARCHAR"=>String, "NUMERIC"=>Float64, "REAL"=>Float64,
                            "SMALLINT"=>Int16, "TEXT"=>String, "TIME"=>String,
                            "TIMESTAMP"=>DateTime, "VARBINARY"=>BitArray, "STRING"=>String,
-                           "VARCHAR"=>String, "BigInteger"=>BigInt, "NullType"=>Any)
+                           "VARCHAR"=>String, "BIGINTEGER"=>Int64, "NULLTYPE"=>Any)
 
 function _sql_type_string(col::PyObject)
     sqltype = split(string(col[:type]), ' ')[2]
