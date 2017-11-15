@@ -120,7 +120,7 @@ _fetchmulti(rp::ResultProxy, nrows::Integer) = nrows ≥ 0 ? pyfetchmany(rp, nro
 
 function _insert_single_entry(col::AbstractVector{Union{T,Null}}, row, ncol, val::PyObject) where T
     if val == pynone
-        col[row] = pynone
+        col[row] = null
     else
         col[row] = coerce(Union{T,Null}, val)
     end
