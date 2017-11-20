@@ -4,7 +4,7 @@ module SQLAlchemy
 
 using DataStreams
 using DataFrames
-using Nulls  # needed for use with datastreams
+using Missings  # needed for use with datastreams
 using PyCall
 # using Requires
 

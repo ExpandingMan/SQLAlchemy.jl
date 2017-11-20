@@ -9,13 +9,13 @@ const DEFAULT_DATETIME_FORMAT = Dates.DateFormat("yyyy-mm-dd HH:MM:SS.s")
 
 coerce(::Type{T}, x) where T = convert(T, x)::T
 
-coerce(::Type{Union{T,Null}}, x::Void) where T = null
+coerce(::Type{Union{T,Missing}}, x::Void) where T = missing
 
 coerce(::Type{Date}, d::AbstractString) = Date(d, Dates.ISODateFormat)
 coerce(::Type{DateTime}, d::AbstractString) = DateTime(d, DEFAULT_DATETIME_FORMAT)
 
-function coerce(::Type{Union{D,Null}}, d::AbstractString) where D <: Dates.TimeType
-    isempty(d) ? null : coerce(D, d)
+function coerce(::Type{Union{D,Missing}}, d::AbstractString) where D <: Dates.TimeType
+    isempty(d) ? missing : coerce(D, d)
 end
 
 coerce(::Type{T}, x::PyObject) where T = coerce(T, convert(PyAny, x))::T
@@ -64,7 +64,7 @@ eltypes(cols::Vector{Column}) = eltype.(cols)
 eltypes(cols::Dict{String,Column}) = Dict{String,DataType}(k=>eltype(v) for (k,v) ∈ cols)
 export eltypes
 
-nulleltypes(cols::AbstractVector{Column}) = Type[Union{eltype(c),Null} for c ∈ cols]
+nulleltypes(cols::AbstractVector{Column}) = Type[Union{eltype(c),Missing} for c ∈ cols]
 
 name(c::Column)::String = c.o[:name]
 
@@ -118,16 +118,16 @@ export typedict
 
 _fetchmulti(rp::ResultProxy, nrows::Integer) = nrows ≥ 0 ? pyfetchmany(rp, nrows) : pyfetchall(rp)
 
-function _insert_single_entry(col::AbstractVector{Union{T,Null}}, row, ncol, val::PyObject) where T
+function _insert_single_entry(col::AbstractVector{Union{T,Missing}}, row, ncol, val::PyObject) where T
     if val == pynone
-        col[row] = null
+        col[row] = missing
     else
-        col[row] = coerce(Union{T,Null}, val)
+        col[row] = coerce(Union{T,Missing}, val)
     end
 end
 function _insert_single_entry(col::AbstractVector{T}, row, ncol, val::PyObject) where T
     if val == pynone
-        ArgumentError("Tried to insert null into non-null column $ncol.")
+        ArgumentError("Tried to insert missing into non-missing column $ncol.")
     else
         col[row] = coerce(T, val)
     end
